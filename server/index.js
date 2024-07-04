@@ -1,48 +1,51 @@
-// imports
 const express = require('express');
 const axios = require('axios');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // API keys
-const IPSTACK_API_KEY = '1c40c918764a40c2aabb689a3aca799f';
-const OPENWEATHERMAP_API_KEY = '5f494edd70a16ce0c7710bee6d17f0bb';
+const IPINFO_ACCESS_TOKEN = '12e14c14-da33-4c47-aa65-fc0699670676';
+const WEATHER_API_KEY = 'fa566a26483a061a7b67eb9727cbce9e';
 
-// app.get('/', (req, res) => {
-//     res.send('Welcome to the API server. Use /api/hello?visitor_name=YourName to get a greeting.');
-// });
+// Helper function to get location data
+async function getLocationData(ip) {
+    try {
+        const response = await axios.get(`https://ipinfo.io/${ip}?token=${IPINFO_ACCESS_TOKEN}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching location data: ${error.message}`);
+        return { city: 'Nairobi' };
+    }
+}
+
+// Helper function to get weather data
+async function getWeatherData(city) {
+    try {
+        const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${WEATHER_API_KEY}`);
+        return response.data.main.temp;
+    } catch (error) {
+        console.error(`Error fetching weather data: ${error.message}`);
+        return 'unknown';
+    }
+}
 
 app.get('/api/hello', async (req, res) => {
-    const visitor_name = req.query.visitor_name;
-    // const client_ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const client_ip = "129.205.113.174"
-    
+    const visitor_name = req.query.visitor_name || 'Guest';
+    let client_ip = '41.80.112.212';
 
-    try {
-        // Get location data
-        const locationResponse = await axios.get(`http://api.ipstack.com/${client_ip}?access_key=${IPSTACK_API_KEY}`);
-        const locationData = locationResponse.data;
-        const city = locationData.city;
-        const lat = locationData.latitude;
-        const lon = locationData.longitude;
+    const locationData = await getLocationData(client_ip);
+    const city = locationData.city || 'Nairobi';
+    const temperature = await getWeatherData(city);
 
-        // // Get weather data
-        // const weatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHERMAP_API_KEY}`);
-        // const weatherData = weatherResponse.data;
-        // const temperature = weatherData.main.temp;
-        
+    const greeting = `Hello, ${visitor_name}!, the temperature is ${temperature} degrees Celsius in ${city}`;
 
-        res.json({
-            client_ip: client_ip,
-            location: city,
-            greeting: `Hello, ${visitor_name}!, the temperature is 40 degrees Celsius in ${city}`
-        });
+    const response = {
+        client_ip: client_ip,
+        location: city,
+        greeting: greeting
+    };
 
-        console.log(locationData);
-    } catch (error) {
-        console.error('Error retrieving data:', error.message);
-        res.status(500).send('Error retrieving data');
-    }
+    res.json(response);
 });
 
 app.listen(port, () => {
