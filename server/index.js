@@ -4,7 +4,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // API keys
-const IPINFO_ACCESS_TOKEN = '12e14c14-da33-4c47-aa65-fc0699670676';
+const IPINFO_ACCESS_TOKEN = '6351760a921947';
 const WEATHER_API_KEY = 'fa566a26483a061a7b67eb9727cbce9e';
 
 // Helper function to get location data
@@ -14,7 +14,7 @@ async function getLocationData(ip) {
         return response.data;
     } catch (error) {
         console.error(`Error fetching location data: ${error.message}`);
-        return { city: 'Nairobi' };
+        return { city: 'Unknown' };
     }
 }
 
@@ -31,10 +31,10 @@ async function getWeatherData(city) {
 
 app.get('/api/hello', async (req, res) => {
     const visitor_name = req.query.visitor_name || 'Guest';
-    let client_ip = '41.80.112.212';
+    const client_ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     const locationData = await getLocationData(client_ip);
-    const city = locationData.city || 'Nairobi';
+    const city = locationData.city || 'Unknown';
     const temperature = await getWeatherData(city);
 
     const greeting = `Hello, ${visitor_name}!, the temperature is ${temperature} degrees Celsius in ${city}`;
